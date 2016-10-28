@@ -1,0 +1,21 @@
+{
+  "name": "alfredbot-slack",
+  "version": "1.0.0",
+  "description": "Alfred bot - Slack",
+  "main": "bin/bot.js",
+  "scripts": {
+    "start": "node bin/bot.js",
+    "prestart": "node scripts/database.js"
+  },
+  "author": "Benjamin Envent",
+  "license": "ISC",
+  "dependencies": {
+    "moment": "^2.15.1",
+    "moment-timezone": "^0.5.7",
+    "node-schedule": "^1.1.1",
+    "slack-node": "^0.1.8",
+    "slackbots": "^0.5.3",
+    "sqlite3": "^3.1.6",
+    "ws": "^1.1.1"
+  }
+}
