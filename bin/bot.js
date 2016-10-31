@@ -24,6 +24,8 @@ bot.openRTM(function(server) {
     server.on('message', function(response) {
         response = JSON.parse(response);
 
+        var doAskBot = true;
+
         if(response.type == 'message') {
             // Edited message
             if(typeof response.subtype != 'undefined' && response.subtype == 'message_changed') {
@@ -51,6 +53,9 @@ bot.openRTM(function(server) {
                         if (listUsers[i].im_id == response.channel
                             && listUsers[i].id == response.user
                             && listUsers[i].waiting_answer) {
+
+                            doAskBot = false;
+
                             // We receive a message from a user present in the UserList
                             // User is responding to an answer
                             var question_id = listUsers[i].waiting_answer;
@@ -62,21 +67,23 @@ bot.openRTM(function(server) {
                             }
                             listUsers[i].waiting_answer = false;
 
-                            sendQuestion(listUsers[i], function (response) {
-                                if (!response) {
-                                    bot.sendMessage(listUsers[i].id, 'Merci, on a en fini pour aujourd\'hui !');
+                            // Save questions
+                            var user = listUsers[i];
+                            saveAnswers(user, function(response) {
+                                sendQuestion(user, function (response) {
+                                    if (!response) {
+                                        bot.sendMessage(user.id, {text: 'Merci !'});
 
-                                    sendToChannel(listUsers[i], config.channel);
-                                }
+                                        sendToChannel(user, config.channel);
+                                    }
+                                });
                             });
 
-                            // Save questions
-                            saveAnswers(listUsers[i]);
-                        } else {
-                            askBot(response);
                         }
                     }
-                } else {
+                }
+
+                if(doAskBot) {
                     askBot(response);
                 }
             }
@@ -91,8 +98,8 @@ getUsers();
 schedule.scheduleJob('0 ' + config.schedule.minute + ' * * * 1-5', function() {
     getUsers(function() {
         for(var i = 0; i < listUsers.length; i ++) {
-            if(config.schedule.hour == moment().tz(listUsers[i].tz).format("hh")) {
-            	sendQuestion(listUsers[i]);
+            if(config.schedule.hour == moment().tz(listUsers[i].tz).format("HH")) {
+                sendQuestion(listUsers[i]);
             }
         }
     });
@@ -151,19 +158,47 @@ function getUsers(callback) {
 function sendQuestion(user, callback) {
     var askQuestion = false;
 
-    for(var i = 0; i < user.questions.length; i++) {
-        if(user.waiting_answer == false && user.questions[i].answer == null) {
-            user.waiting_answer = user.questions[i].id;
-            askQuestion = true;
-            var message = new Object();
-            message.text = user.questions[i].value;
-            message.attachments = null;
-            bot.sendMessage(user.im_id, message);
-        }
-    }
+    if(user.waiting_answer == false) {
+        var listQIds = [];
 
-    if(typeof callback === 'function') {
-        callback(askQuestion);
+        for(var i = 0; i < user.questions.length; i++) {
+            listQIds.push(user.questions[i].id);
+        }
+
+        var date = moment().tz(user.tz).format("YYYY-MM-DD");
+
+        myModel.getAnswers(
+            user.id,
+            date,
+            listQIds.join(),
+            function(answers) {
+                for(var i = 0; i < user.questions.length; i++) {
+                    for(var j = 0; j < answers.length; j++) {
+                        if(answers[j].question_id == user.questions[i].id) {
+                            user.questions[i].answer    = answers[j].answer;
+                            user.questions[i].posted_ts = answers[j].posted_ts;
+                        }
+                    }
+
+                    if(user.waiting_answer == false && (user.questions[i].answer == null || user.questions[i].answer == 'null')) {
+                        user.waiting_answer = user.questions[i].id;
+                        askQuestion = true;
+                        var message = new Object();
+                        message.text = user.questions[i].value;
+                        message.attachments = null;
+                        bot.sendMessage(user.im_id, message);
+                    }
+                }
+
+                if(typeof callback === 'function') {
+                    callback(askQuestion);
+                }
+            }
+        );
+    } else {
+        if(typeof callback === 'function') {
+            callback(askQuestion);
+        }
     }
 }
 
@@ -172,14 +207,21 @@ function sendQuestion(user, callback) {
  *
  * @param object user
  */
-function saveAnswers(user) {
+function saveAnswers(user, callback) {
+    var iterator = 0;
     for(var i = 0; i < user.questions.length; i++) {
         myModel.saveAnswer(
             user.id,
             user.questions[i].id,
             user.questions[i].answer,
             user.questions[i].date,
-            user.questions[i].posted_ts
+            user.questions[i].posted_ts,
+            function(response) {
+                iterator++;
+                if(iterator == user.questions.length && typeof callback === 'function') {
+                    callback(response);
+                }
+            }
         );
     }
 }
@@ -261,8 +303,9 @@ function askBot(message) {
         }
     }
 
-    // asking resume
+    // asking bot
     if(message.text && false === isBot) {
+        // asking resume
         if (message.text.toLowerCase().indexOf('resume') > -1) {
             var words = message.text.split(' ');
             var users = [];
@@ -299,34 +342,6 @@ function askBot(message) {
                     doResume(users[i], date, message.channel);
                 }
             }
-
-            /*myModel.getUsers(function (response) {
-                var detailUsers = [];
-
-                bot.getUsersIdList(response, function (resp) {
-                    if (users.length == 0) {
-                        detailUsers = resp;
-                    } else {
-                        for (var i = 0; i < users.length; i++) {
-                            for (var j = 0; j < resp.length; j++) {
-                                if (users[i] == resp[j].id) {
-                                    detailUsers.push(resp[j]);
-                                }
-                            }
-                        }
-                    }
-
-                    for (var i = 0; i < detailUsers.length; i++) {
-                        doResume(detailUsers[i], date, function (response) {
-                            // Send message to user
-                            var msg = new Object();
-                            msg.text = response;
-                            msg.attachments = null;
-                            bot.sendMessage(message.channel, msg);
-                        });
-                    }
-                });
-            });*/
         }
         // Asking help
         else if (message.text.toLowerCase().indexOf('help') > -1) {
@@ -337,6 +352,20 @@ function askBot(message) {
             msg += '- resume @user_n1 @user_n2 2016-12-25 -> résumé des utilisateurs 1 et 2 au 25 Déc 2016\n';
 
             bot.sendMessage(message.channel, {text: msg});
+        }
+
+        // Asking manual report
+        else if (message.text.toLowerCase().indexOf('report') > -1) {
+            for(var i = 0; i < listUsers.length; i++) {
+                var user = listUsers[i];
+                if(message.user == user.id) {
+                    sendQuestion(user, function(askUser) {
+                        if(askUser == false) {
+                            bot.sendMessage(message.user, {text: 'Vous avez déjà répondu pour aujourd\'hui !'});
+                        }
+                    });
+                }
+            }
         }
     }
 }
