@@ -295,6 +295,7 @@ function generateChannelMessage(user) {
  * @param message
  */
 function askBot(message) {
+
     var isBot = false;
 
     // Check if sender message is bot
@@ -306,71 +307,84 @@ function askBot(message) {
 
     // asking bot
     if(message.text && false === isBot) {
-        // asking resume
-        if (message.text.toLowerCase().indexOf('resume') > -1) {
-            var words = message.text.split(' ');
-            var users = [];
-            var date = null;
+        getBotImList(function(botImList) {
 
-            for (var i = 0; i < words.length; i++) {
-                // Check we have an user
-                if (words[i].indexOf('<@') == 0) {
-                    users.push(words[i].substring(2, words[i].length - 1));
-                }
-                // Check we have a date
-                else if (words[i].match(/^\d{4}\-\d{2}\-\d{2}$/)) {
-                    date = words[i];
-                }
-            }
+            for(var i in botImList) {
+                if(message.channel == botImList[i].id) {
+                    // asking resume
+                    if (message.text.toLowerCase().indexOf('resume') > -1) {
+                        var words = message.text.split(' ');
+                        var users = [];
+                        var date = null;
 
-            if(date == null) {
-                date = moment().tz('Europe/Brussels').format("YYYY-MM-DD");
-            }
-
-            if(users.length == 0) {
-                myModel.getUsersQuestionByDate(date, function(response) {
-                    if(response.length > 0) {
-                        for(var i = 0; i < response.length; i++) {
-                            doResume(response[i].user_id, date, message.channel);
+                        for (var i = 0; i < words.length; i++) {
+                            // Check we have an user
+                            if (words[i].indexOf('<@') == 0) {
+                                users.push(words[i].substring(2, words[i].length - 1));
+                            }
+                            // Check we have a date
+                            else if (words[i].match(/^\d{4}\-\d{2}\-\d{2}$/)) {
+                                date = words[i];
+                            }
                         }
-                    } else {
-                        var msg = 'Aucun utilisateur n\'a participé au stand à cette date : ' + date;
+
+                        if(date == null) {
+                            date = moment().tz('Europe/Brussels').format("YYYY-MM-DD");
+                        }
+
+                        if(users.length == 0) {
+                            myModel.getUsersQuestionByDate(date, function(response) {
+                                if(response.length > 0) {
+                                    for(var i = 0; i < response.length; i++) {
+                                        doResume(response[i].user_id, date, message.channel);
+                                    }
+                                } else {
+                                    var msg = 'Aucun utilisateur n\'a participé au stand à cette date : ' + date;
+                                    bot.sendMessage(message.channel, {text: msg});
+                                }
+                            });
+                        } else {
+                            for (var i = 0; i < users.length; i++) {
+                                doResume(users[i], date, message.channel);
+                            }
+                        }
+                    }
+                    // Asking help
+                    else if (message.text.toLowerCase().indexOf('help') > -1) {
+                        var msg = 'Pour demander un résumé :\n';
+                        msg += '- resume -> résumé de tous les utilisateurs d\'aujourd\'hui\n';
+                        msg += '- resume @user_n1 @user_n2 -> résumé des utilisateurs 1 et 2 d\'aujourd\'hui\n';
+                        msg += '- resume 2016-12-25 -> résumé de tous les utilisateurs au 25 Déc 2016\n';
+                        msg += '- resume @user_n1 @user_n2 2016-12-25 -> résumé des utilisateurs 1 et 2 au 25 Déc 2016\n';
+
                         bot.sendMessage(message.channel, {text: msg});
                     }
-                });
-            } else {
-                for (var i = 0; i < users.length; i++) {
-                    doResume(users[i], date, message.channel);
-                }
-            }
-        }
-        // Asking help
-        else if (message.text.toLowerCase().indexOf('help') > -1) {
-            var msg = 'Pour demander un résumé :\n';
-            msg += '- resume -> résumé de tous les utilisateurs d\'aujourd\'hui\n';
-            msg += '- resume @user_n1 @user_n2 -> résumé des utilisateurs 1 et 2 d\'aujourd\'hui\n';
-            msg += '- resume 2016-12-25 -> résumé de tous les utilisateurs au 25 Déc 2016\n';
-            msg += '- resume @user_n1 @user_n2 2016-12-25 -> résumé des utilisateurs 1 et 2 au 25 Déc 2016\n';
 
-            bot.sendMessage(message.channel, {text: msg});
-        }
-
-        // Asking manual report
-        else if (message.text.toLowerCase().indexOf('report') > -1) {
-            for(var i = 0; i < listUsers.length; i++) {
-                var user = listUsers[i];
-                if(message.user == user.id) {
-                    sendQuestion(user, function(askUser) {
-                        if(askUser == false) {
-                            bot.sendMessage(message.user, {text: 'Vous avez déjà répondu pour aujourd\'hui !'});
+                    // Asking manual report
+                    else if (message.text.toLowerCase().indexOf('report') > -1) {
+                        for(var i = 0; i < listUsers.length; i++) {
+                            var user = listUsers[i];
+                            if(message.user == user.id) {
+                                sendQuestion(user, function(askUser) {
+                                    if(askUser == false) {
+                                        bot.sendMessage(message.user, {text: 'Vous avez déjà répondu pour aujourd\'hui !'});
+                                    }
+                                });
+                            }
                         }
-                    });
+                    }
                 }
             }
-        }
+        });
     }
 }
 
+/**
+ * Generate the resume report
+ * @param user_id
+ * @param date
+ * @param channel
+ */
 function doResume(user_id, date, channel) {
     bot.getUserInfo(user_id, function(user) {
         myModel.getQuestionsByUserAndByDate(user.id, date, function (questions) {
@@ -392,5 +406,16 @@ function doResume(user_id, date, channel) {
             msg.attachments = JSON.stringify(attachments);
             bot.sendPersonnalizedMessage(channel, msg, user.name, user.profile.image_48);
         });
+    });
+}
+
+/**
+ * Get bot informations
+ */
+function getBotImList(callback) {
+    bot.getImList(function(response) {
+        if(typeof callback === 'function') {
+            callback(response.ims);
+        }
     });
 }
