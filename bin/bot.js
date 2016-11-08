@@ -128,6 +128,7 @@ function getUsers(callback) {
                             q.posted_ts = null;
                             q.posted_channel = null;
                             q.date = moment().tz(listUsers[i].tz).format("YYYY-MM-DD");
+                            q.color = response[j].color;
 
                             questions.push(q);
                         }
