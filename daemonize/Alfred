@@ -1,0 +1,16 @@
+#!/bin/sh
+
+export PATH=$PATH:/usr/local/bin
+export NODE_PATH=$NODE_PATH:/usr/local/lib/node_modules
+
+case "$1" in
+  start)
+  exec forever --sourceDir=/var/www/nodejs/alfredbot-slack -p /var/run/forever start bin/bot.js
+  ;;
+
+  stop)
+  exec forever stop --sourceDir=/var/www/nodejs/alfredbot-slack bin/bot.js
+  ;;
+esac
+
+exit 0
