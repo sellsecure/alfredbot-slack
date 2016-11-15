@@ -6,18 +6,25 @@ Alfred check all users in a channel (see config part) to send them some question
 
 
 ## How to config Alfred ?
-Open config.js at the root path, and update these settings with your own data :
->config.slack.botName    = 'alfredbot';
->
->config.slack.token      = 'your_bot_token'; // Here put the token api of your bot in slack
->
->config.schedule.hour    = 09; // Hour to schedule the submission of the report
->
->config.schedule.minute  = 30; // Minutes to schedule the submission of the report
->
->config.channel          = 'your_channel_name'; // Name of the channel where Alfred picks its user list (every hour)
->
->config.dbName           = 'alfredbot.db'; // Name of the SQLite DB, stored in the data folder of Alfredbot
+Copy the **config.js.dist** to **config.js** at the root path, and update these settings with your own data :
+```
+var config = {
+
+    slack : {
+        botName : 'alfredbot',
+        token : 'your_bot_token' // Here put the token api of your bot in slack
+    },
+
+    schedule : {
+        hour : 9, // Hour to schedule the submission of the report
+        minute : 30 // Minutes to schedule the submission of the report
+    },
+
+    channel : 'your_channel_name', // Name of the channel where Alfred picks its user list (every hour)
+
+    dbName : 'alfredbot.db' // Name of the SQLite DB, stored in the data folder of Alfredbot
+};
+```
 
 
 ## First Launch
