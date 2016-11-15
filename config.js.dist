@@ -1,13 +1,17 @@
 var config = {
+
     slack : {
         botName : 'alfredbot',
-        token : 'xoxb-104067802833-UQYKoy8O2IhfN1eOsr9Zrp2g'
+        token : 'your_bot_token'
     },
+
     schedule : {
         hour : 9,
         minute : 30
     },
-    channel : 'jean-louis-room',
+
+    channel : 'your_channel_name',
+
     dbName : 'alfredbot.db'
 };
 
