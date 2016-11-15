@@ -11,18 +11,23 @@ Copy the **config.js.dist** to **config.js** at the root path, and update these 
 var config = {
 
     slack : {
+        // Put the name you given at your bot
         botName : 'alfredbot',
-        token : 'your_bot_token' // Here put the token api of your bot in slack
+        // Put the token api of your bot in slack
+        token : 'your_bot_token'
     },
 
     schedule : {
-        hour : 9, // Hour to schedule the submission of the report
-        minute : 30 // Minutes to schedule the submission of the report
+        // Hour and minute to schedule the submission of the report
+        hour : 9,
+        minute : 30
     },
 
-    channel : 'your_channel_name', // Name of the channel where Alfred picks its user list (every hour)
+    // Name of the channel where Alfred picks its user list (every hour)
+    channel : 'your_channel_name',
 
-    dbName : 'alfredbot.db' // Name of the SQLite DB, stored in the data folder of Alfredbot
+    // Name of the SQLite DB, stored in the data folder of Alfredbot
+    dbName : 'alfredbot.db'
 };
 ```
 
