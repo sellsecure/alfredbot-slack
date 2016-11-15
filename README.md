@@ -11,7 +11,6 @@ Copy the **config.js.dist** to **config.js** at the root path, and update these 
 var config = {
 
     slack : {
-        // Put the name you given at your bot
         botName : 'alfredbot',
         // Put the token api of your bot in slack
         token : 'your_bot_token'
