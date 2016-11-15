@@ -25,7 +25,18 @@ if (! fs.existsSync(dbPath)) {
             ' `id`	INTEGER PRIMARY KEY AUTOINCREMENT,' +
             ' `value`	TEXT,' +
             ' `color`	TEXT' +
-            ')');
+            ')',
+            function () {
+                db.run(
+                    'INSERT INTO questions (value, color) VALUES($value, $color)',
+                    {
+                        $value: 'How are you today ?',
+                        $color: '123456'
+                    }
+                );
+            }
+        );
+
 
         // Create table questions_users
         db.run('CREATE TABLE `questions_users` (' +
