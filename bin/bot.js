@@ -5,6 +5,7 @@ var schedule    = require('node-schedule');
 var model       = require('../lib/model.js');
 var moment      = require('moment-timezone');
 var config      = require('../config.js');
+var parameters  = require('../parameters.js');
 
 var myModel     = new model(config.dbName);
 var listUsers   = [];
@@ -273,7 +274,7 @@ function generateChannelMessage(user) {
     var message         = new Object();
     message.text        = user.name + ' a posté un statut : ' + moment().tz(user.tz).format('D MMM, YYYY');
 
-    message.attachments = questionsToAttachments(questions, true);
+    message.attachments = questionsToAttachments(user.questions, true);
 
     return message;
 }
@@ -400,6 +401,12 @@ function questionsToAttachments(questions, json) {
     var attachments = [];
     // For each question
     for(var i = 0; i < questions.length; i++) {
+        // Check if the response means "nothing to say"
+        if (questions[i].answer.length == 0 || questions[i].answer.match(parameters.nullAnswerRegExp)) {
+            // Skip if it is
+            continue;
+        }
+        // Build the attachment
         var attachment = new Object();
         attachment.fallback = questions[i].value + '\n' + questions[i].answer;
         attachment.color = questions[i].color;
@@ -407,7 +414,7 @@ function questionsToAttachments(questions, json) {
         attachment.text = questions[i].answer;
         // To enable markdown in attachment (See https://api.slack.com/docs/message-formatting#message_formatting)
         attachment.mrkdwn_in = ['text', 'pretext'];
-
+        // Add the attachment in the returned array
         attachments.push(attachment);
     }
     // Return the attachment array
