@@ -1,5 +1,5 @@
 var parameters = {
-    nullAnswerRegExp : /^(nothing|none|no|~|-+| +)$/i
+    nullAnswerRegExp : /^(nothing|none|no|~+|-+| +|\.+)$/i
 };
 
 module.exports = parameters;

@@ -267,15 +267,18 @@ function updateChannelMessage(user) {
 /**
  * Generate the message to send to the channel
  *
- * @param object user
+ * @param {object} user
  * @returns {Object}
  */
 function generateChannelMessage(user) {
-    var message         = new Object();
-    message.text        = user.name + ' a posté un statut : ' + moment().tz(user.tz).format('D MMM, YYYY');
-
-    message.attachments = questionsToAttachments(user.questions, true);
-
+    var message = {
+        attachments: questionsToAttachments(user.questions, true),
+        text: user.name + ' a posté un statut : ' + moment().tz(user.tz).format('D MMM, YYYY')
+    };
+    // If there is no answers
+    if (message.attachments.length == 0) {
+        message.text += '\nBut have nothing to say...';
+    }
     return message;
 }
 
