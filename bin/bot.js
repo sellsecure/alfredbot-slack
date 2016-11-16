@@ -272,21 +272,8 @@ function updateChannelMessage(user) {
 function generateChannelMessage(user) {
     var message         = new Object();
     message.text        = user.name + ' a posté un statut : ' + moment().tz(user.tz).format('D MMM, YYYY');
-    var attachments     = [];
 
-    for(var i = 0; i < user.questions.length; i++) {
-        var attachment = new Object();
-        attachment.fallback = user.questions[i].value + '\n' + user.questions[i].answer;
-        attachment.color = user.questions[i].color;
-        attachment.title = user.questions[i].value;
-        attachment.text = user.questions[i].answer;
-        // To enable markdown in attachment (See https://api.slack.com/docs/message-formatting#message_formatting)
-        attachment.mrkdwn_in = ['text', 'pretext'];
-
-        attachments.push(attachment);
-    }
-
-    message.attachments = JSON.stringify(attachments);
+    message.attachments = questionsToAttachments(questions, true);
 
     return message;
 }
@@ -391,26 +378,44 @@ function doResume(user_id, date, channel) {
     bot.getUserInfo(user_id, function(user) {
         myModel.getQuestionsByUserAndByDate(user.id, date, function (questions) {
             var text = 'Résumé pour l\'utilisateur : ' + user.name + ' à la date du ' + date +' \n';
-            var attachments = [];
-
-            for(var i = 0; i < questions.length; i++) {
-                var attachment = new Object();
-                attachment.fallback = questions[i].value + '\n' + questions[i].answer;
-                attachment.color = questions[i].color;
-                attachment.title = questions[i].value;
-                attachment.text = questions[i].answer;
-                // To enable markdown in attachment (See https://api.slack.com/docs/message-formatting#message_formatting)
-                attachment.mrkdwn_in = ['text', 'pretext'];
-
-                attachments.push(attachment);
-            }
 
             var msg = new Object();
             msg.text = text;
-            msg.attachments = JSON.stringify(attachments);
+            msg.attachments = questionsToAttachments(questions, true);
             bot.sendPersonnalizedMessage(channel, msg, user.name, user.profile.image_48);
         });
     });
+}
+
+/**
+ * Return array of attachment from array of questions
+ *
+ * @param {Array}   questions[]
+ * @param {boolean} [json=false]
+ *
+ * @returns Array|string
+ */
+function questionsToAttachments(questions, json) {
+    // Prepare attachments array
+    var attachments = [];
+    // For each question
+    for(var i = 0; i < questions.length; i++) {
+        var attachment = new Object();
+        attachment.fallback = questions[i].value + '\n' + questions[i].answer;
+        attachment.color = questions[i].color;
+        attachment.title = questions[i].value;
+        attachment.text = questions[i].answer;
+        // To enable markdown in attachment (See https://api.slack.com/docs/message-formatting#message_formatting)
+        attachment.mrkdwn_in = ['text', 'pretext'];
+
+        attachments.push(attachment);
+    }
+    // Return the attachment array
+    if (json === true) {
+        return JSON.stringify(attachments);
+    } else {
+        return attachments;
+    }
 }
 
 /**
