@@ -280,6 +280,8 @@ function generateChannelMessage(user) {
         attachment.color = user.questions[i].color;
         attachment.title = user.questions[i].value;
         attachment.text = user.questions[i].answer;
+        // To enable markdown in attachment (See https://api.slack.com/docs/message-formatting#message_formatting)
+        attachment.mrkdwn_in = ['text', 'pretext'];
 
         attachments.push(attachment);
     }
@@ -397,6 +399,8 @@ function doResume(user_id, date, channel) {
                 attachment.color = questions[i].color;
                 attachment.title = questions[i].value;
                 attachment.text = questions[i].answer;
+                // To enable markdown in attachment (See https://api.slack.com/docs/message-formatting#message_formatting)
+                attachment.mrkdwn_in = ['text', 'pretext'];
 
                 attachments.push(attachment);
             }
