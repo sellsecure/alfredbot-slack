@@ -235,21 +235,25 @@ function saveAnswers(user, callback) {
  * @param string channel
  */
 function sendToChannel(user, channel) {
-    var message = generateChannelMessage(user);
-
-    bot.sendPersonnalizedMessage(channel, message, user.name, user.profile.image_48, function(response) {
-        for(var i = 0; i < user.questions.length; i++) {
-            user.questions[i].posted_ts = response.message.ts;
-            user.questions[i].posted_channel = response.channel;
-            myModel.saveAnswer(
-                user.id,
-                user.questions[i].id,
-                user.questions[i].answer,
-                user.questions[i].date,
-                response.message.ts
-            );
+    bot.sendPersonnalizedMessage(
+        channel,
+        generateReportMessage(user, user.questions),
+        user.name,
+        user.profile.image_48,
+        function(response) {
+            for(var i = 0; i < user.questions.length; i++) {
+                user.questions[i].posted_ts = response.message.ts;
+                user.questions[i].posted_channel = response.channel;
+                myModel.saveAnswer(
+                    user.id,
+                    user.questions[i].id,
+                    user.questions[i].answer,
+                    user.questions[i].date,
+                    response.message.ts
+                );
+            }
         }
-    });
+    );
 }
 
 /**
@@ -259,20 +263,23 @@ function sendToChannel(user, channel) {
  * @param string channel
  */
 function updateChannelMessage(user) {
-    var message = generateChannelMessage(user);
-
-    bot.updateMessage(user.questions[0].posted_ts, user.questions[0].posted_channel, message);
+    bot.updateMessage(
+        user.questions[0].posted_ts,
+        user.questions[0].posted_channel,
+        generateReportMessage(user, user.questions)
+    );
 }
 
 /**
- * Generate the message to send to the channel
+ * Generate the message to represent a report
  *
  * @param {object} user
+ * @param {Array} questions
  * @returns {Object}
  */
-function generateChannelMessage(user) {
+function generateReportMessage(user, questions) {
     var message = {
-        attachments: questionsToAttachments(user.questions, true),
+        attachments: questionsToAttachments(questions, true),
         text: user.name + ' a posté un statut : ' + moment().tz(user.tz).format('D MMM, YYYY')
     };
     // If there is no answers
@@ -381,12 +388,12 @@ function askBot(message) {
 function doResume(user_id, date, channel) {
     bot.getUserInfo(user_id, function(user) {
         myModel.getQuestionsByUserAndByDate(user.id, date, function (questions) {
-            var text = 'Résumé pour l\'utilisateur : ' + user.name + ' à la date du ' + date +' \n';
-
-            var msg = new Object();
-            msg.text = text;
-            msg.attachments = questionsToAttachments(questions, true);
-            bot.sendPersonnalizedMessage(channel, msg, user.name, user.profile.image_48);
+            bot.sendPersonnalizedMessage(
+                channel,
+                generateReportMessage(user, questions),
+                user.name,
+                user.profile.image_48
+            );
         });
     });
 }
