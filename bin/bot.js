@@ -73,7 +73,7 @@ bot.openRTM(function(server) {
                             saveAnswers(user, function(response) {
                                 sendQuestion(user, function (response) {
                                     if (!response) {
-                                        bot.sendMessage(user.id, {text: 'Merci !'});
+                                        bot.sendMessage(user.id, {text: parameters.messages.report.closeNew});
 
                                         sendToChannel(user, config.channel);
                                     }
@@ -284,7 +284,7 @@ function generateReportMessage(user, questions) {
     };
     // If there is no answers
     if (message.attachments == '[]') {
-        message.text += '\n_But have nothing to say..._';
+        message.text += '\n' + parameters.messages.report.emptyAnswers;
     }
     return message;
 }
@@ -339,7 +339,7 @@ function askBot(message) {
                                         doResume(response[i].user_id, date, message.channel);
                                     }
                                 } else {
-                                    var msg = 'Aucun utilisateur n\'a participé au stand à cette date : ' + date;
+                                    var msg = parameters.messages.report.nothingAt + date;
                                     bot.sendMessage(message.channel, {text: msg});
                                 }
                             });
@@ -367,7 +367,7 @@ function askBot(message) {
                             if(message.user == user.id) {
                                 sendQuestion(user, function(askUser) {
                                     if(askUser == false) {
-                                        bot.sendMessage(message.user, {text: 'Vous avez déjà répondu pour aujourd\'hui !'});
+                                        bot.sendMessage(message.user, {text: parameters.messages.report.doneToday});
                                     }
                                 });
                             }
