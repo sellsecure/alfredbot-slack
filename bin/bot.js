@@ -276,8 +276,8 @@ function generateChannelMessage(user) {
         text: user.name + ' a posté un statut : ' + moment().tz(user.tz).format('D MMM, YYYY')
     };
     // If there is no answers
-    if (message.attachments.length == 0) {
-        message.text += '\nBut have nothing to say...';
+    if (message.attachments == '[]') {
+        message.text += '\n_But have nothing to say..._';
     }
     return message;
 }
