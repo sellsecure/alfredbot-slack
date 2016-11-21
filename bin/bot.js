@@ -5,6 +5,8 @@ var schedule    = require('node-schedule');
 var model       = require('../lib/model.js');
 var moment      = require('moment-timezone');
 var config      = require('../config.js');
+var parameters  = require('../parameters.js');
+var log         = require('../lib/logger')
 
 var myModel     = new model(config.dbName);
 var listUsers   = [];
@@ -20,6 +22,7 @@ bot.run();
 bot.openRTM(function(server) {
     console.log('Server launched');
     console.log('---------------');
+    log.info('Server launched')
 
     server.on('message', function(response) {
         response = JSON.parse(response);
