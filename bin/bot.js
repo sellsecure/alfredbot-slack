@@ -5,7 +5,6 @@ var schedule    = require('node-schedule');
 var model       = require('../lib/model.js');
 var moment      = require('moment-timezone');
 var config      = require('../config.js');
-var parameters  = require('../parameters.js');
 var log         = require('../lib/logger')
 
 var myModel     = new model(config.dbName);
@@ -25,6 +24,9 @@ bot.openRTM(function(server) {
     log.info('Server launched')
 
     server.on('message', function(response) {
+        log.debug('On message: ', response);
+        console.log('On message: \n', response);
+
         response = JSON.parse(response);
 
         var doAskBot = true;
@@ -99,9 +101,11 @@ getUsers();
 
 // Launch scheduled program
 schedule.scheduleJob('0 ' + config.schedule.minute + ' * * * 1-5', function() {
+    log.debug('Scheduled Job');
     getUsers(function() {
         for(var i = 0; i < listUsers.length; i ++) {
             if(config.schedule.hour == moment().tz(listUsers[i].tz).format("HH")) {
+                log.debug('Scheduled Job / Send question to %s', listUsers[i].name);
                 sendQuestion(listUsers[i]);
             }
         }
