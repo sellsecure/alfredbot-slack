@@ -389,20 +389,24 @@ function askBot(message) {
  */
 function doResume(user_id, date, channel) {
     bot.getUserInfo(user_id, function(user) {
-        myModel.getQuestionsByUserAndByDate(user.id, date, function (questions) {
-            var text = 'Résumé pour l\'utilisateur : ' + user.name + ' à la date du ' + date +' \n';
+        myModel.getQuestionsByUserAndByDate(user.id, date, function (uestions) {
             var attachments = [];
+            if(questions.length > 0) {
+                var text = 'Résumé pour l\'utilisateur : ' + user.name + ' à la date du ' + date +' \n';
 
-            for(var i = 0; i < questions.length; i++) {
-                var attachment = new Object();
-                attachment.fallback = questions[i].value + '\n' + questions[i].answer;
-                attachment.color = questions[i].color;
-                attachment.title = questions[i].value;
-                attachment.text = questions[i].answer;
-                // To enable markdown in attachment (See https://api.slack.com/docs/message-formatting#message_formatting)
-                attachment.mrkdwn_in = ['text', 'pretext'];
+                for(var i = 0; i < questions.length; i++) {
+                    var attachment = new Object();
+                    attachment.fallback = questions[i].value + '\n' + questions[i].answer;
+                    attachment.color = questions[i].color;
+                    attachment.title = questions[i].value;
+                    attachment.text = questions[i].answer;
+                    // To enable markdown in attachment (See https://api.slack.com/docs/message-formatting#message_formatting)
+                    attachment.mrkdwn_in = ['text', 'pretext'];
 
-                attachments.push(attachment);
+                    attachments.push(attachment);
+                }
+            } else {
+                var text = 'Malheureusement je n\'ai pas répondu aux questions à la date du ' + date + '.';
             }
 
             var msg = new Object();
