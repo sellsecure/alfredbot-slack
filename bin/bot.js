@@ -5,7 +5,8 @@ var schedule    = require('node-schedule');
 var model       = require('../lib/model.js');
 var moment      = require('moment-timezone');
 var config      = require('../config.js');
-var log         = require('../lib/logger')
+var log         = require('../lib/logger');
+var server      = null;
 
 var myModel     = new model(config.dbName);
 var listUsers   = [];
@@ -15,86 +16,11 @@ var bot = new StandBot({
     name:   config.slack.botName
 });
 
+
 bot.run();
 
-// Open RTM
-bot.openRTM(function(server) {
-    console.log('Server launched');
-    console.log('---------------');
-    log.info('Server launched')
-
-    server.on('message', function(response) {
-        log.debug('On message: ', response);
-        console.log('On message: \n', response);
-
-        response = JSON.parse(response);
-
-        var doAskBot = true;
-
-        if(response.type == 'message') {
-            // Edited message
-            if(typeof response.subtype != 'undefined' && response.subtype == 'message_changed') {
-                for(var i = 0; i < listUsers.length; i++) {
-                    for(var j = 0; j < listUsers[i].questions.length; j++) {
-                        var ts = listUsers[i].questions[j].ts;
-                        if(ts == response.previous_message.ts) {
-                            listUsers[i].questions[j].answer = response.message.text;
-
-                            // Save questions
-                            saveAnswers(listUsers[i]);
-
-                            if(listUsers[i].questions[j].posted_ts
-                                && listUsers[i].questions[j].posted_channel) {
-                                updateChannelMessage(listUsers[i]);
-                            }
-                        }
-                    }
-                }
-            }
-            // Posted new message
-            else {
-                if(listUsers.length > 0) {
-                    for (var i = 0; i < listUsers.length; i++) {
-                        if (listUsers[i].im_id == response.channel
-                            && listUsers[i].id == response.user
-                            && listUsers[i].waiting_answer) {
-
-                            doAskBot = false;
-
-                            // We receive a message from a user present in the UserList
-                            // User is responding to an answer
-                            var question_id = listUsers[i].waiting_answer;
-                            for (var j = 0; j < listUsers[i].questions.length; j++) {
-                                if (question_id == listUsers[i].questions[j].id) {
-                                    listUsers[i].questions[j].answer = response.text;
-                                    listUsers[i].questions[j].ts = response.ts;
-                                }
-                            }
-                            listUsers[i].waiting_answer = false;
-
-                            // Save questions
-                            var user = listUsers[i];
-                            saveAnswers(user, function(response) {
-                                sendQuestion(user, function (response) {
-                                    if (!response) {
-                                        bot.sendMessage(user.id, {text: 'Merci !'});
-
-                                        sendToChannel(user, config.channel);
-                                    }
-                                });
-                            });
-
-                        }
-                    }
-                }
-
-                if(doAskBot) {
-                    askBot(response);
-                }
-            }
-        }
-    });
-});
+// Open RTM server connection
+getRTMServer();
 
 // Get user when launch the script (we need to always have this users)
 getUsers();
@@ -102,6 +28,12 @@ getUsers();
 // Launch scheduled program
 schedule.scheduleJob('0 ' + config.schedule.minute + ' * * * 1-5', function() {
     log.debug('Scheduled Job');
+
+    if(server.readyState !== 1) {
+        log.debug('We have to reboot RTM Server');
+        getRTMServer();
+    }
+
     getUsers(function() {
         for(var i = 0; i < listUsers.length; i ++) {
             if(config.schedule.hour == moment().tz(listUsers[i].tz).format("HH")) {
@@ -111,6 +43,91 @@ schedule.scheduleJob('0 ' + config.schedule.minute + ' * * * 1-5', function() {
         }
     });
 });
+
+// Open RTM
+function getRTMServer() {
+    server = null;
+    bot.openRTM(function (response) {
+        server = response;
+        console.log('Server launched');
+        console.log('---------------');
+        log.info('Server launched');
+
+        server.on('message', function (response) {
+            log.debug('On message: ', response);
+            console.log('On message: \n', response);
+
+            response = JSON.parse(response);
+
+            var doAskBot = true;
+
+            if (response.type == 'message') {
+                // Edited message
+                if (typeof response.subtype != 'undefined' && response.subtype == 'message_changed') {
+                    for (var i = 0; i < listUsers.length; i++) {
+                        for (var j = 0; j < listUsers[i].questions.length; j++) {
+                            var ts = listUsers[i].questions[j].ts;
+                            if (ts == response.previous_message.ts) {
+                                listUsers[i].questions[j].answer = response.message.text;
+
+                                // Save questions
+                                saveAnswers(listUsers[i]);
+
+                                if (listUsers[i].questions[j].posted_ts
+                                    && listUsers[i].questions[j].posted_channel) {
+                                    updateChannelMessage(listUsers[i]);
+                                }
+                            }
+                        }
+                    }
+                }
+                // Posted new message
+                else {
+                    if (listUsers.length > 0) {
+                        for (var i = 0; i < listUsers.length; i++) {
+                            if (listUsers[i].im_id == response.channel
+                                && listUsers[i].id == response.user
+                                && listUsers[i].waiting_answer) {
+
+                                doAskBot = false;
+
+
+                                // We receive a message from a user present in the UserList
+                                // User is responding to an answer
+                                var question_id = listUsers[i].waiting_answer;
+                                for (var j = 0; j < listUsers[i].questions.length; j++) {
+                                    if (question_id == listUsers[i].questions[j].id) {
+                                        listUsers[i].questions[j].answer = response.text;
+                                        listUsers[i].questions[j].ts = response.ts;
+                                        log.info('Get user respond to question ' + question_id + ', text : ' + response.text);
+                                    }
+                                }
+                                listUsers[i].waiting_answer = false;
+
+                                // Save questions
+                                var user = listUsers[i];
+                                saveAnswers(user, function (response) {
+                                    sendQuestion(user, function (response) {
+                                        if (!response) {
+                                            bot.sendMessage(user.id, {text: 'Merci !'});
+
+                                            sendToChannel(user, config.channel);
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                    }
+
+                    if (doAskBot) {
+                        askBot(response);
+                    }
+                }
+            }
+        });
+    });
+}
+
 
 /**
  * Get list Users
