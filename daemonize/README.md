@@ -15,4 +15,13 @@
 > service Alfred start
 
 ## Stop Alfred Service
+The function
 > service Alfred stop
+
+is not working (knows issue from forever), so find the process and kill it yourself :
+>ps aux | grep forever
+
+And kill forever
+> ps aux | grep alfredbot
+
+And kill alfredbot
