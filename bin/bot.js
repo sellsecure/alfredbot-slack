@@ -119,6 +119,7 @@ function getUsers(callback) {
 
                         var questions = [];
 
+
                         for(var j = 0; j < response.length; j++) {
                             var q = new Object();
                             q.id = response[j].id;
@@ -127,6 +128,9 @@ function getUsers(callback) {
                             q.ts = null;
                             q.posted_ts = null;
                             q.posted_channel = null;
+                            if(listUsers[i].tz !== 'undefined') {
+                                listUsers[i].tz = 'Europe/Paris';
+                            }
                             q.date = moment().tz(listUsers[i].tz).format("YYYY-MM-DD");
                             q.color = response[j].color;
 
